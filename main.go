@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 // Logger struct represents a simple logging utility.
@@ -21,27 +20,31 @@ func (l *Logger) Setup() {
 
 // Success logs a success message with optional IP information.
 func (l *Logger) Success(message string, ip string) {
-	fmt.Printf("\x1b[42mSuccess!\x1b[0m %s %s\n", message, getIPInfo(ip))
+	fmt.Printf("\x1b[37m\x1b[42mSuccess!\x1b[0m %s %s\n", message, getIPInfo(ip))
 }
 
 // Warning logs a warning message with optional IP information.
 func (l *Logger) Warning(message string, ip string) {
-	fmt.Printf("\x1b[43mWarning!\x1b[0m %s %s\n", message, getIPInfo(ip))
+	fmt.Printf("\x1b[37m\x1b[43mWarning!\x1b[0m %s %s\n", message, getIPInfo(ip))
+}
+
+// Warning logs a warning message with optional IP information.
+func (l *Logger) Info(message string, ip string) {
+	fmt.Printf("\x1b[37m\x1b[44mInfo!\x1b[0m %s %s\n", message, getIPInfo(ip))
 }
 
 // Error logs an error message with optional IP information.
 func (l *Logger) Error(message string, ip string) {
-	fmt.Printf("\x1b[41mError!\x1b[0m %s %s\n", message, getIPInfo(ip))
-}
-
-// Reader struct represents a simple reader utility for decoding messages.
-type Reader struct {
-	packet []byte
+	fmt.Printf("\x1b[37m\x1b[41mError!\x1b[0m %s %s\n", message, getIPInfo(ip))
 }
 
 // Decode converts the packet bytes to a string.
-func (r *Reader) Decode() string {
-	return string(r.packet)
+func decode(packet []byte) string {
+	var message string
+	for i := 0; i < len(packet); i++ {
+		message += string(packet[i])
+	}
+	return message
 }
 
 var clients = make(map[string]*websocket.Conn)
@@ -101,11 +104,11 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
 			delete(clients, clientID)
-			logger.Error("Connection closed", r.RemoteAddr)
+			logger.Info("Connection closed", r.RemoteAddr)
 			break
 		}
 
-		message := Reader{packet: data}.Decode()
+		message := decode(data)
 		fmt.Println(message)
 	}
 }
